@@ -195,3 +195,10 @@ ca_prec_24_co_summary <- ca_prec_24_co_summary |>
 
 saveRDS(clean_ca_prec_24_co, "ca_prec_24_congress_votes.rds")
 saveRDS(ca_prec_24_co_summary, "ca_prec_24_congress_summary.rds" )
+
+
+#4/08
+
+ca_cvap_2024_bg <- read_csv("C:/Users/ximen/OneDrive/data and society/ca_cvap_2024_bg.csv")
+
+
