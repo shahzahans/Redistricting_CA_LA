@@ -9,8 +9,17 @@ map_la <- alarm_50state_map('LA')
 plans_la <- alarm_50state_plans('LA')
 shp <- st_read("la_2024_gen_all_prec")
 sf_obj <- geojson_sf("https://redistricting.lls.edu/wp-content/uploads/la_2020_congress_2024-01-22.json")
+my_map_theme <- function(){
+  theme(panel.background=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank())
+  }
+
+
 
 ### Tidy Datasets
+
 precincts <- shp |>
   select(Parish, NAME20, GEOID20, GCON01DMAN:geometry) |>
   mutate(district = ifelse(GCON01DMAN | GCON01NHYE | GCON01RARR | GCON01RSCA | GCON01RSHA > 0, 1,
@@ -37,6 +46,8 @@ names(racedemo2026) <- c("Parish",
                      paste("O", Race, sep = "_"))
 
 ### Load Datasets
+
+
 precincts2024 <- readRDS("precincts2024.rds")
 
 ### Plots
@@ -50,15 +61,6 @@ just_parishes <- precincts2024 |>
 just_parishes
 
 
-precincts2024 |>
-  ggplot() +
-  geom_sf(aes(fill = party, color = party), linewidth = 0.05) +
-  theme_bw() +
-  scale_fill_manual(values = c("blue", "red")) +
-  scale_color_manual(values = c("darkblue", "darkred")) +
-  geom_sf(data = sf_obj, fill = NA, color = "black", linewidth = 1)
-
-
 precincts_votes <- precincts2024 |>
   group_by(GEOID20) |> 
   mutate(total = sum(votes)) |>
@@ -67,21 +69,36 @@ precincts_votes <- precincts2024 |>
   group_by(GEOID20) |>
   slice_max(order_by = abs(prop_votes), n = 1) |>
   ggplot() +
-  geom_sf(aes(fill = prop_votes)) +
-  scale_fill_party_b() +
+  geom_sf(data=sf_obj, fill = "gray40", color = NA) +
+  geom_sf(aes(fill = 100 * prop_votes), color = "gray20", linewidth = 0.01) +
+  scale_fill_gradient2(low = "#b2182b",
+                       mid = "white",
+                       high = "#2166ac",
+                       midpoint = 0,
+                       breaks = c(-100, 0, 100),
+                       labels = c("100% R", "0%", "100% D")) +
   geom_sf(data = sf_obj, fill = NA, color = "black", linewidth = 1)
-precincts_votes
+precincts_votes +
+  my_map_theme() +
+  labs(title = "Percentage of Votes in each Precinct",
+       subtitle = "The percentages are of the votes for the Democrat or Republican party\n in the US House race",
+       fill = "Percentage")
 
 
 num_votes_map <- precincts2024 |>
   group_by(GEOID20) |>
   summarize(votes = sum(votes)) |>
   ggplot() +
-  geom_sf(aes(fill = cut(votes, breaks = c(0,50, 100, 250, 500, 750, 100000)))) +
+  geom_sf(aes(fill = cut(votes, 
+                         breaks = c(0,50, 100, 250, 500, 750, 100000), 
+                         labels = c("50", "100", "250", "500", "750", "750+")))) +
   scale_fill_manual(values = c("gray90", "gray80", "gray65", "gray45", "gray20", "gray10")) +
   theme_bw() +
   geom_sf(data = sf_obj, fill = NA, color = "darkred", linewidth = 1)
-num_votes_map
+num_votes_map +
+  labs(fill = "# of Votes",
+       title = "Number of Votes in each Precinct") +
+  my_map_theme() 
 
 
 
@@ -97,14 +114,21 @@ district_winner <- sf_obj |>
       st_drop_geometry() |>
       as_tibble(),
     by = c("Districts" = "district"))
-district_winner <- district_winner |>
+district_winner_map <- district_winner |>
   ggplot() +
   geom_sf(aes(fill = majority)) +
   scale_fill_gradient2(low = "#b2182b",
                        mid = "white",
                        high = "#2166ac",
-                       midpoint = -0.04)
-district_winner
+                       midpoint = 0,
+                       breaks = c(-0.3, -0.2, -0.1, 0, 0.1),
+                       labels = c("30% R", "20% R", "10% R", "0%", "10% D"))
+district_winner_map +
+  my_map_theme() +
+  labs(fill = "Majority %",
+       title = "Percentage of Votes that each District's \nUS House Race Winner Won by",
+       subtitle = "Percentages represent the proportion of votes over 50% (majority)",
+       caption = "District 6 (Appears to be white) won by a democrat by a majority plus 0.7%")
 
 ### Probably Worthless
 
@@ -112,8 +136,13 @@ districts2024 |>
   ggplot() +
   geom_sf(aes(fill = winner))
 
-
-
+precincts2024 |>
+  ggplot() +
+  geom_sf(aes(fill = party, color = party), linewidth = 0.05) +
+  theme_bw() +
+  scale_fill_manual(values = c("blue", "red")) +
+  scale_color_manual(values = c("darkblue", "darkred")) +
+  geom_sf(data = sf_obj, fill = NA, color = "black", linewidth = 1)
 
 precincts2024_dem <- precincts2024 |>
   group_by(GEOID20) |>
@@ -136,7 +165,6 @@ precincts2024_rep <- precincts2024 |>
 
 
 
-
 precincts <- shp |>
   select(Parish, NAME20, GEOID20, GCON01DMAN:geometry) |>
   mutate(district = ifelse(GCON01DMAN | GCON01NHYE | GCON01RARR | GCON01RSCA | GCON01RSHA > 0, 1,
@@ -146,7 +174,33 @@ precincts <- shp |>
                                                 ifelse(GCON05DVAL | GCON05RMEN > 0, 5, 6)))))) |>
   pivot_longer(cols = GCON01DMAN:GCON06RGUI,
                names_to = "person",
-               values_to = "votes")
+               values_to = "votes") |>
+  mutate(party = ifelse((person == "GCON01NHYE"), "noparty",
+                        ifelse((person == "GCON01DMAN" | person == "GCON02DCAR" | person == "GCON02DDAV" | person == "GCON03DGON" | person == "GCON03DSUM" | person == "GCON05DVAL" | person == "GCON06DAND" | person == "GCON06DFIE" | person == "GCON06DJON" | person == "GCON06DWIL"), "democrat", "republican")))|>
+  filter(votes > 0, party != "other") |>
+  mutate(d_votes = ifelse(party == "republican", (-1)*votes, votes))
 
-ggplot(data = precincts) +
-  geom_sf(fill = "green")
+precincts <- precincts |>
+  group_by(district) |>
+  summarize(votes = sum(votes))
+precincts |>
+ggplot() +
+  geom_sf() +
+  theme_dark()
+
+
+
+
+
+
+
+
+map_la |> 
+  ggplot() +
+  geom_district(aes(group = cd_2020, fill = ndv, denom = nrv + ndv)) +
+  scale_fill_party_c() +
+  theme_map()
+
+
+
+
