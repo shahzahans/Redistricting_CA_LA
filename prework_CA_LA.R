@@ -201,4 +201,59 @@ saveRDS(ca_prec_24_co_summary, "ca_prec_24_congress_summary.rds" )
 
 ca_cvap_2024_bg <- read_csv("C:/Users/ximen/OneDrive/data and society/ca_cvap_2024_bg.csv")
 
+#4/09 work map precinct 2024 data winning party 
 
+attempt_ca_precinct <- clean_ca_prec_24_pivot_filter |>
+  group_by(UNIQUE_ID)|>
+  select(UNIQUE_ID,geometry,Election_Type, Party, Votes)|>
+  filter(Election_Type == "GCO")
+
+attempt_ca_precinct_wider <- attempt_ca_precinct |>
+  pivot_wider(
+    names_from = Party, 
+    values_from = Votes,
+    values_fn = {sum},
+    values_fill = 0
+  )
+attempt_ca_precinct_wider <- attempt_ca_precinct_wider |>
+  mutate(
+    Total_Votes = (D + R),
+    prop_d = (D/Total_Votes),
+    prop_r = (R/Total_Votes),
+    winner = case_when(
+      prop_d > 0.5 ~ "Democratic",
+      prop_r > 0.5 ~ "Republican",
+      TRUE         ~ "Tie/Other"
+    ))
+
+precinct_map_ca <- ggplot(data = attempt_ca_precinct_wider) +
+  geom_sf(aes(fill = winner), color = "white", size = 0.05) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winning Party"
+  ) +
+  theme_minimal()
+print(precinct_map_ca)
+
+# map for voting citizens CA
+
+subset_ca_cvap_2024_bg <- ca_cvap_2024_bg |>
+  select(GEOID, COUNTY, COUNTYFP, TRACTCE, BLKGRPCE, C_TOT24, C_AMI24, C_ASI24, C_BLA24,C_NHP24, C_WHT24, C_HSP24, CVAP_TOT24,CVAP_AMI24, CVAP_ASI24,CVAP_BLA24, CVAP_NHP24, CVAP_WHT24, CVAP_HSP24)
+
+library(tigris)
+library(sf)
+
+ca_shapes <- block_groups(state = "CA", cb = TRUE, year = 2024)
+
+ca_map_cvap <- ca_shapes |>
+  left_join(subset_ca_cvap_2024_bg, by = "GEOID")
+
+#good graph
+ggplot(data = ca_map_cvap) +
+  geom_sf(aes(fill = CVAP_TOT24), color = NA) + # 'fill' colors the map based on your citizens estimate
+  scale_fill_fermenter(breaks  = c(0, 50,500,1000,1500,5000,10000), name = "# of Voting Citizens ", limits= c(0, 13000), palette = "YlOrRd", direction = 1) +
+  theme_minimal() 
