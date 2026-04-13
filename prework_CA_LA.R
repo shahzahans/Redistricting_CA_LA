@@ -257,3 +257,46 @@ ggplot(data = ca_map_cvap) +
   geom_sf(aes(fill = CVAP_TOT24), color = NA) + # 'fill' colors the map based on your citizens estimate
   scale_fill_fermenter(breaks  = c(0, 50,500,1000,1500,5000,10000), name = "# of Voting Citizens ", limits= c(0, 13000), palette = "YlOrRd", direction = 1) +
   theme_minimal() 
+
+
+
+
+# precinct map of CA with grey areas(ties/other)
+
+test1 <- clean_ca_prec_24_pivot |>
+  filter(Election_Type == "GCO")|>
+  select(UNIQUE_ID,geometry,Election_Type, Party, Votes)
+
+
+test1_pivot <- test1|>
+  pivot_wider(
+    names_from = Party, 
+    values_from = Votes,
+    values_fn = {sum},
+    values_fill = 0
+  )
+
+test1_pivot <- test1_pivot|>
+  mutate(
+    Total_Votes = (D + R),
+    prop_d = (D/Total_Votes),
+    prop_r = (R/Total_Votes),
+    winner = case_when(
+      prop_d > 0.5 ~ "Democratic",
+      prop_r > 0.5 ~ "Republican",
+      TRUE         ~ "Tie/Other"
+    ))
+
+
+test_map_ca <- ggplot(data = test1_pivot) +
+  geom_sf(aes(fill = winner), color = NA, size = 0.05) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winning Party"
+  ) +
+  theme_minimal()
+print(test_map_ca)
