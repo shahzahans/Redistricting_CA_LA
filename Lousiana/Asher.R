@@ -7,7 +7,7 @@ library(geojsonsf)
 library(readxl)
 map_la <- alarm_50state_map('LA')
 plans_la <- alarm_50state_plans('LA')
-shp <- st_read("la_2024_gen_all_prec")
+shp <- st_read("Data_Folder/LA_DATA/la_2024_gen_all_prec")
 sf_obj <- geojson_sf("https://redistricting.lls.edu/wp-content/uploads/la_2020_congress_2024-01-22.json")
 
 ### Tidy Datasets
@@ -37,6 +37,10 @@ names(racedemo2026) <- c("Parish",
                      paste("O", Race, sep = "_"))
 
 ### Load Datasets
+
+
+saveRDS(precincts, "precincts2024.rds")
+
 precincts2024 <- readRDS("precincts2024.rds")
 
 ### Plots
