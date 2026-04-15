@@ -58,7 +58,7 @@ la_analysis <- map_la |>
 
 
 ggplot(la_analysis) + 
-  geom_sf(aes(fill = black_prop)) + 
+  geom_sf(aes(fill = hisp_prop)) + 
   scale_fill_gradient(low = "white", 
                       high = "darkred", 
                       labels = scales::percent,
