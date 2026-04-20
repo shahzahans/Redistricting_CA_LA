@@ -396,3 +396,117 @@ turnout_map_ca <- ggplot(test1_pivot_with_reg) +
   theme_minimal()
 
 turnout_map_ca
+
+
+
+
+
+# ca pl9471 work
+
+
+CA_geom <- pl_tidy_shp("CA", year = 2020, path = pl_url("CA", year = 2020))
+
+
+save(CA_geom, file = "CA_geom.RData")
+
+CA_geom <- CA_geom |>
+  mutate(GEOID_11 = substr(GEOID, 1, 11))
+
+CA_geom_summary <- CA_geom |>
+  group_by(GEOID_11)|>
+  summarize(Prec_pop = sum(pop))
+
+# joining the above precinct pop with ca data ?
+
+joined_ca <- test1_pivotmap2 |>
+  left_join(
+    st_drop_geometry(CA_geom_summary),
+    by = c("UNIQUE_ID" = "GEOID_11")
+  )
+
+# la pl9471 work 
+library("PL94171")
+
+LA_geom <- pl_tidy_shp("LA", year = 2020, path = pl_url("LA", year = 2020))
+
+
+LA_geom_summary <- LA_geom |>
+  group_by(vtd)|>
+  summarize(Prec_pop = sum(pop))
+
+
+
+LA_map_grouping <- la_map_redist |>
+  group_by(GEOID20)|>
+  summarize( total_votes = sum(votes))
+
+
+join_vtd_pop <- LA_map_grouping|>
+  left_join(
+    st_drop_geometry(map_la),
+    by = c("GEOID20" = "GEOID")
+  )
+
+
+#redistricing plan for LA 
+
+
+join_vtd_pop_filter <- join_vtd_pop|>
+  mutate(pop = replace_na(pop, 0))
+
+adj_la <- redist.adjacency(join_vtd_pop_filter)
+
+redist_obj_la <- redist_map(
+  data = join_vtd_pop_filter,
+  pop = join_vtd_pop_filter$pop,
+  ndists = 6,
+  pop_tol = 0.01,
+  adj = adj_la
+)
+
+
+plans_la <- redist_smc(
+  redist_obj_la,
+  nsims = 100,      # number of plans
+  runs = 2           # independent chains
+)
+
+
+planla1 <- get_plans_matrix(plans_la)[, 1]
+
+mapla_plan1 <- redist_obj_la$data |>
+  mutate(district = factor(planla1))
+
+potential_la_redist_map <- ggplot(mapla_plan1) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  theme_minimal()
+
+potential_la_redist_map
+
+
+planla2 <- get_plans_matrix(plans_la)[, 2]
+
+mapla_plan2 <- redist_obj_la$data |>
+  mutate(district = factor(planla2))
+
+potential_la_redist_map2 <- ggplot(mapla_plan2) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  theme_minimal()
+
+potential_la_redist_map2
+
+points_black <- mapla_plan2 |>
+  sf::st_centroid()
+
+
+potential_la_redistmap2_black_pop <- ggplot(mapla_plan2) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  geom_sf(
+    data = points_black,
+    aes(size = pop_black),
+    alpha = 0.7) +
+  scale_size(range = c(1, 10)) +
+  theme_minimal()
