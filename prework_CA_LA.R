@@ -667,4 +667,15 @@ potential_ca_redist_map2 <- ggplot(mapca_plan2) +
 
 potential_ca_redist_map2
 
+# with district fill 
+mapca_district_plan1 <- mapca_plan1 |>
+  group_by(district)|>
+  summarize()
 
+potential_ca_redist_map_lines <- ggplot(mapca_plan1) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 1) +
+  theme_minimal()
+
+potential_ca_redist_map_lines
