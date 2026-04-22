@@ -510,3 +510,161 @@ potential_la_redistmap2_black_pop <- ggplot(mapla_plan2) +
     alpha = 0.7) +
   scale_size(range = c(1, 10)) +
   theme_minimal()
+
+CA_block_24 <- st_read("C:/Users/ximen/OneDrive/large files/state_g24_voters_by_block20.csv")
+
+
+CA_block_24_clean <- CA_block_24|>
+  select(-c(AIP,PAF,MSC,LIB,NLP,GRN, REF, DCL,HISPDCL, HISPOTH, JEWDCL, JEWOTH, KORDCL,KOROTH, JPNDCL, JPNOTH,CHIDCL, CHIOTH, INDDCL,INDOTH, VIETDCL, VIETOTH, FILDCL, FILOTH, DEMMUNK, DEMFUNK, REPMUNK, REPFUNK, DCLMUNK,DCLM1824, DCLM2534, DCLM3544, DCLM4554, DCLM5564,	
+            DCLM65PL, 	
+            DCLFUNK,	
+            DCLF1824,	
+            DCLF2534,	
+            DCLF3544,	
+            DCLF4554,	
+            DCLF5564,	
+            DCLF65PL,	
+            OTHMUNK,	
+            OTHM1824,
+            OTHM2534,
+            OTHM3544, 
+            OTHM4554,
+            OTHM5564,	
+            OTHM65PL,
+            OTHFUNK,		
+            OTHF1824,
+            OTHF2534,	
+            OTHF3544,	
+            OTHF4554,	
+            OTHF5564,
+            OTHF65PL,DREG1G,DREG2G,DREG3G,DREG4G,DREG5G,DREG6G, DREG7G, DREG8G,DREG9G, RREG1G, RREG2G, RREG3G, RREG4G, RREG5G, RREG6G, RREG7G, RREG8G, RREG9G, IREG1G, IREG2G, IREG3G,IREG4G, IREG5G, IREG6G, IREG7G, IREG8G, IREG9G, OREG1G,OREG2G, OREG3G, OREG4G,OREG5G,OREG6G, OREG7G,OREG8G, OREG9G))
+
+
+CA_block_24_clean <- CA_block_24_clean|>
+  select(-c(TYPE, ELECTION, GEO_TYPE))
+
+library(tigris)
+
+ca_shapes <- block_groups(state = "CA", cb = TRUE, year = 2024)
+
+CA_blocks <- blocks(state = "CA", year = 2024)
+
+
+CA_PL_geo <- CA_blocks |>
+  left_join(
+    st_drop_geometry(CA_geom),
+    by = c("GEOID20" = "GEOID"))
+
+save(CA_PL_geo, file = "CA_PL_geo.RData")
+
+
+adj_ca_2 <- redist.adjacency(CA_PL_geo)
+
+redist_obj_ca2 <- redist_map(
+  data = CA_PL_geo,
+  pop = CA_PL_geo$pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_ca_2
+)
+
+CA_PL_geo_contig <- CA_PL_geo[-c(71025, 95136, 114692, 116438, 120223, 120224, 120225, 120226, 120227,
+                                 120228, 120333, 120334, 120343, 120347, 145611, 145612, 145614, 145615, 145617, 160885, 160926,
+                                 166355, 166356, 166357, 166360, 166364, 166365, 176189, 176190, 176289, 176348, 181577, 181591,
+                                 185363, 185374, 187030, 194505, 194506, 196325, 196327, 196328, 196330, 208687, 223834, 224282,
+                                 230703, 258747, 264681, 264682, 264688, 264885, 274741, 277551, 277568, 280048, 280049, 283113,
+                                 285344, 295150, 296907, 296908, 296909, 298546, 302260, 302271, 305447, 320203, 320204, 320205,
+                                 320206, 320207, 320435, 324296, 324298, 324299, 324302, 324303, 324304, 324305, 324308, 324311,
+                                 324313, 324317, 324320, 324322, 324323, 324324, 336049, 336930, 336931, 336932, 336933, 336934,
+                                 336940, 336958, 336974, 350312, 353599, 353600, 353601, 353602, 353603, 353726, 356472, 356486,
+                                 358316, 358317, 358318, 358319, 358320, 358321, 358322, 358323, 358324, 358325, 358326, 358327,
+                                 358328, 361015, 361025, 361039, 361041, 362174, 368562, 368563, 368564, 368565, 368566, 368567,
+                                 368568, 373084, 373085, 377797, 396946, 396949, 396954, 396959, 397517, 397518, 401457, 401458,
+                                 401460, 401461, 401462, 401463, 401465, 401466, 401467, 401468, 401469, 401470, 404968, 416352,
+                                 417318, 433433, 449097, 449106, 449119, 449121, 449122, 458687, 474367, 474368, 474369, 474370,
+                                 474371, 513344, 513357, 513388),]
+
+
+
+CA_PL_geo_contig_data <- CA_PL_geo_contig|>
+  left_join(
+    CA_block_24_clean,
+    by = c("GEOID20" = "BLOCK20"))
+
+
+adj_ca_3 <- redist.adjacency(CA_PL_geo_contig_data)
+
+redist_obj_ca3 <- redist_map(
+  data = CA_PL_geo_contig_data,
+  pop = CA_PL_geo_contig_data$pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_ca_3
+)
+
+plans_ca <- redist_smc(
+  redist_obj_ca3,
+  nsims = 3,      # number of plans
+  runs = 2           # independent chains
+)
+
+#reduce the number of observations in the ca geo cont data
+
+
+CA_numeric_group_attempt <- CA_PL_geo_contig_data |>
+  mutate(across(
+    c(TOTREG_R, DEM, REP, MALE, FEMALE, HISPDEM, HISPREP,
+      DEMM1824, DEMM2534, DEMM3544, DEMM4554, DEMM5564, DEMM65PL,
+      DEMF1824, DEMF2534, DEMF3544, DEMF4554, DEMF5564, DEMF65PL, REPM1824, REPM2534, REPM3544, REPM4554, REPM5564,
+      REPM65PL, REPF1824, REPF2534, REPF3544, REPF4554, REPF5564, REPF65PL),
+    ~ as.numeric(.x)
+  ))
+
+ca_group_attempt <- CA_numeric_group_attempt |>
+  group_by(GEOID_11) |>
+  summarise(POP = sum(pop), total_hisp_pop = sum(pop_hisp), total_white_pop = sum(pop_white), total_black_pop = sum(pop_black), total_asian_pop = sum(pop_asian), total_other_pop = sum(pop_other), total_reg = sum(TOTREG_R), total_dem = sum(DEM), total_rep = sum(REP), total_male = sum(MALE), total_female = sum(FEMALE), total_hisp_dem = sum(HISPDEM), total_hisp_rep = sum(HISPREP), total_demm1824 = sum(DEMM1824), total_demm2534 = sum(DEMM2534), total_demm3544 = sum(DEMM3544), total_demm4554 = sum(DEMM4554), total_demm5564 = sum(DEMM5564), total_demm64PL = sum(DEMM65PL), total_demf1824 = sum(DEMF1824), total_demf2534 = sum(DEMF2534), total_demf3544 = sum(DEMF3544), total_demf4554 = sum(DEMF4554), total_demf5564 = sum(DEMF5564), total_demf65PL = sum(DEMF65PL),
+            total_repm1824 = sum(REPM1824), total_repm2534 = sum(REPM2534), total_repm3544 = sum(REPM3544), total_repm4554 = sum(REPM4554), total_repm5564 = sum(REPM5564), total_repm64PL = sum(REPM65PL),
+            total_repf1824 = sum(REPF1824), total_repf2534 = sum(REPF2534), total_repf3544 = sum(REPF3544), total_repf4554 = sum(REPF4554), total_repf5564 = sum(REPF5564), total_repf64PL = sum(REPF65PL), na.rm = TRUE)
+
+
+adj_ca_4 <- redist.adjacency(ca_group_attempt)
+
+redist_obj_ca4 <- redist_map(
+  data = ca_group_attempt,
+  pop = ca_group_attempt$POP,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_ca_4
+)
+
+plans_ca <- redist_smc(
+  redist_obj_ca4,
+  nsims = 5,      # number of plans
+  runs = 2           # independent chains
+)
+
+planca1 <- get_plans_matrix(plans_ca)[, 1]
+
+mapca_plan1 <- redist_obj_ca4$data |>
+  mutate(district = factor(planca1))
+
+potential_ca_redist_map <- ggplot(mapca_plan1) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  theme_minimal()
+
+potential_ca_redist_map
+
+planca2 <- get_plans_matrix(plans_ca)[, 2]
+
+mapca_plan2 <- redist_obj_ca4$data |>
+  mutate(district = factor(planca2))
+
+potential_ca_redist_map2 <- ggplot(mapca_plan2) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  theme_minimal()
+
+potential_ca_redist_map2
+
+
