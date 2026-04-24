@@ -448,6 +448,230 @@ join_vtd_pop <- LA_map_grouping|>
   )
 
 
+#adjusting the LA data to include democrat and republican votes***MOST HELPFUL CODE FOr Louisiana
+
+precincts2024_ximena <- precincts2024|>
+  pivot_wider(
+    names_from = party, 
+    values_from = votes,
+    values_fn = {sum},
+    values_fill = 0
+  )
+
+precincts2024_ximena <- precincts2024_ximena |>
+  select(-c(noparty, d_votes))
+
+precincts2024_ximena <- precincts2024_ximena|>
+  mutate(total_votes = (democrat + republican),
+         d_prop = (democrat/total_votes),
+         r_prop = (republican/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+
+LA_map_grouping2 <- precincts2024_ximena |>
+  group_by(GEOID20)|>
+  summarize( total_votes = sum(total_votes),
+             total_demo = sum(democrat),
+             total_rep = sum(republican))
+
+
+join_vtd_pop2 <- LA_map_grouping2|>
+  left_join(
+    st_drop_geometry(map_la),
+    by = c("GEOID20" = "GEOID"))
+
+join_vtd_pop2_filter <- join_vtd_pop2|>
+  mutate(pop = replace_na(pop, 0))
+
+adj_la <- redist.adjacency(join_vtd_pop2_filter)
+
+redist_obj_la2 <- redist_map(
+  data = join_vtd_pop2_filter,
+  pop = join_vtd_pop2_filter$pop,
+  ndists = 6,
+  pop_tol = 0.01,
+  adj = adj_la
+)
+
+
+plans_la2 <- redist_smc(
+  redist_obj_la2,
+  nsims = 50,      # number of plans
+  runs = 2           # independent chains
+)
+
+
+planla1_2 <- get_plans_matrix(plans_la2)[, 1]
+
+mapla_plan1_2 <- redist_obj_la2$data |>
+  mutate(district = factor(planla1_2))
+
+mapla_plan1_2 <- mapla_plan1_2|>
+  mutate(d_prop = (total_demo/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+mapla_district_plan1_2 <- mapla_plan1_2 |>
+  group_by(district)|>
+  summarize()
+
+ladistrict_results <- mapla_plan1_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes)
+  )
+
+ladistrict_results <- ladistrict_results|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+ggplot(ladistrict_results) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan1_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal()
+
+#ANOTHER MAP 
+
+planla2_2 <- get_plans_matrix(plans_la2)[, 2]
+
+mapla_plan2_2 <- redist_obj_la2$data |>
+  mutate(district = factor(planla2_2))
+
+mapla_district_plan2_2 <- mapla_plan2_2 |>
+  group_by(district)|>
+  summarize()
+
+ladistrict_results2 <- mapla_plan2_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes)
+  )
+
+ladistrict_results2 <- ladistrict_results2|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+ggplot(ladistrict_results2) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan2_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal()
+
+# map 3 
+
+planla5_2 <- get_plans_matrix(plans_la2)[, 5]
+
+mapla_plan5_2 <- redist_obj_la2$data |>
+  mutate(district = factor(planla5_2))
+
+mapla_district_plan5_2 <- mapla_plan5_2 |>
+  group_by(district)|>
+  summarize()
+
+ladistrict_results5 <- mapla_plan5_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes)
+  )
+
+ladistrict_results5 <- ladistrict_results5|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+ggplot(ladistrict_results5) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan5_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal()
+
+#plan50   
+
+planla50_2 <- get_plans_matrix(plans_la2)[, 50]
+
+mapla_plan50_2 <- redist_obj_la2$data |>
+  mutate(district = factor(planla50_2))
+
+mapla_district_plan50_2 <- mapla_plan50_2 |>
+  group_by(district)|>
+  summarize()
+
+ladistrict_results50 <- mapla_plan50_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes)
+  )
+
+ladistrict_results50 <- ladistrict_results50|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+ggplot(ladistrict_results50) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan50_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal() 
+
 #redistricing plan for LA 
 
 
