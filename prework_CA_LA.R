@@ -672,6 +672,92 @@ ggplot(ladistrict_results50) +
   geom_sf(data = mapla_district_plan50_2, fill = NA, color = "black", linewidth = 0.5)
 theme_minimal() 
 
+#60planla
+
+planla60_2 <- get_plans_matrix(plans_la2)[, 60]
+
+mapla_plan60_2 <- redist_obj_la2$data |>
+  mutate(district = factor(planla60_2))
+
+mapla_district_plan60_2 <- mapla_plan60_2 |>
+  group_by(district)|>
+  summarize()
+
+ladistrict_results60 <- mapla_plan60_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes)
+  )
+
+ladistrict_results60 <- ladistrict_results60|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"
+         ))
+
+ggplot(ladistrict_results60) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan60_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal()
+
+
+
+
+ladistrict_results60 <- ladistrict_results60 |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes # Percentage lead
+  )    
+
+
+ggplot(ladistrict_results60) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapla_district_plan60_2, fill = NA, color = "black", linewidth = 0.5)+
+  theme_minimal() +
+  labs(title = "Proposed Redistricting: Win Margins",
+       fill = "Lead %")
+
+
+ladistrict_results50 <- ladistrict_results50 |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes # Percentage lead
+  )    
+
+
+ggplot(ladistrict_results50) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapla_district_plan50_2, fill = NA, color = "black", linewidth = 0.5)+
+  theme_minimal() +
+  labs(title = "Proposed Redistricting: Win Margins",
+       fill = "Lead %")
+
 #redistricing plan for LA 
 
 
