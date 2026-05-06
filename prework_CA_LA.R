@@ -1308,3 +1308,138 @@ sum(mapca_plan1_vote$d_winner)
 nrow(mapca_plan1_vote)-sum(mapca_plan1_vote$d_winner)
 
 
+mapca_plan1_vote$margin_bin <- cut(
+  mapca_plan1_vote$margin_pct,
+  breaks = c(-Inf, -0.15, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +15% or more",
+    "R +15% to R +10%",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+scale_fill_manual(
+  values = c(
+    "R +15% or more"     = "#67001f",
+    "R +15% to R +10%"   = "#b2182b",
+    "R +10% to R +5%"    = "#d6604d",
+    "R +5% to R +1%"     = "#f4a582",
+    "R +1% to 0%"        = "#fddbc7",
+    "0% to D +1%"        = "#d1e5f0",
+    "D +1% to D +10%"    = "#92c5de",
+    "D +10% to D +20%"   = "#4393c3",
+    "D +20% to D +50%"   = "#2166ac",
+    "D +50% or more"     = "#053061"
+  ),
+  name = "Margin %"
+)
+
+
+mapca1 <- ggplot(mapca_plan1_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +10%"   = "#b2182b",
+      "R +10% to R +5%"    = "#d6604d",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for California: Win Margins")
+
+mapca1
+
+# map 2 for california 
+
+plan3_ca_vote <- get_plans_matrix(plans_ca_vote)[, 3]
+
+mapca_plan3 <- redist_obj_ca_vote$data |>
+  mutate(district = factor(plan3_ca_vote))
+
+
+
+mapca_plan3_vote <- mapca_plan3 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+  )
+
+mapca_plan3_vote <- mapca_plan3_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0)# Percentage lead
+  )    
+
+
+mapca_district_plan3 <- mapca_plan3 |>
+  group_by(district)|>
+  summarize()
+
+
+mapca_plan3_vote$margin_bin <- cut(
+  mapca_plan3_vote$margin_pct,
+  breaks = c(-Inf, -0.15, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +15% or more",
+    "R +15% to R +10%",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+
+mapca3 <- ggplot(mapca_plan3_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +10%"   = "#b2182b",
+      "R +10% to R +5%"    = "#d6604d",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = mapca_district_plan3, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for California: Win Margins")
+
+mapca3
+
+
+sum(mapca_plan3_vote$d_winner)
+nrow(mapca_plan3_vote)-sum(mapca_plan3_vote$d_winner)
