@@ -758,6 +758,68 @@ ggplot(ladistrict_results50) +
   labs(title = "Proposed Redistricting: Win Margins",
        fill = "Lead %")
 
+
+
+ladistrict_results60 <- mapla_plan60_2|>      
+  group_by(district) |>
+  summarize(
+    total_dem = sum(total_demo, na.rm = TRUE),
+    total_rep = sum(total_rep, na.rm = TRUE),
+    total_votes = sum(total_votes),
+    total_pop = sum(pop),
+    total_black = sum(pop_black, na.rm = TRUE),
+    total_hispanic = sum(pop_hisp, na.rm = TRUE),
+    total_white = sum(pop_white, na.rm = TRUE)
+  )
+
+ladistrict_results60 <- ladistrict_results60|>
+  mutate(d_prop = (total_dem/total_votes),
+         r_prop = (total_rep/total_votes),
+         winner = case_when(
+           d_prop > 0.5 ~ "Democratic",
+           r_prop > 0.5 ~ "Republican",
+           TRUE         ~ "Tie/Other"),
+         pct_black = total_black / total_pop * 100)
+
+
+ggplot(ladistrict_results60) +
+  geom_sf(aes(fill = winner)) +
+  scale_fill_manual(
+    values = c(
+      "Democratic" = "#2E5B88", # Standard Blue
+      "Republican" = "#D73027", # Standard Red
+      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+    ),
+    name = "Winner") +
+  geom_sf(data = mapla_district_plan60_2, fill = NA, color = "black", linewidth = 0.5)
+theme_minimal()
+
+
+
+
+ladistrict_results60 <- ladistrict_results60 |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes # Percentage lead
+  )    
+
+
+ggplot(ladistrict_results60) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapla_district_plan60_2, fill = NA, color = "black", linewidth = 0.5)+
+  geom_sf_text(data = ladistrict_results60, aes(label = paste0(round(pct_black), "%")), size = 3, color = "black") +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting: Win Margins",
+       fill = "Lead %")
+
+
 #redistricing plan for LA 
 
 
@@ -989,3 +1051,260 @@ potential_ca_redist_map_lines <- ggplot(mapca_plan1) +
   theme_minimal()
 
 potential_ca_redist_map_lines
+
+
+
+#Ca redist map with 3 islands 
+
+
+CA_may_clean <- CA_PL_geo |>
+  group_by(GEOID_11)|>
+  summarize(total_pop = sum(pop), total_pop_hisp = sum(pop_hisp),
+            total_pop_white = sum(pop_white),
+            total_pop_black = sum(pop_black),
+            total_pop_asian = sum(pop_asian),
+            total_vap = sum(vap),
+            total_vap_hisp = sum(vap_hisp),
+            total_vap_white = sum(vap_white),
+            total_vap_black = sum(vap_black),
+            total_vap_asian = sum(vap_asian))
+
+adj_CA_may <- redist.adjacency(ca_may_clean)
+
+redist_obj_ca_may <- redist_map(
+  data = CA_may_clean,
+  pop = CA_may_clean$total_pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_CA_may
+) 
+
+
+disconnected_ca_may <- CA_may_clean[c(3442, 3443, 7296),]
+
+disconnected_ca_may_unlist <- unlist(CA_may_clean[c(3442, 3443, 7296),])
+
+CA_may_disconnected_centroids <- st_centroid(disconnected_ca_may)
+
+ca_may_clean_adj <- ca_may_clean[-c(3442, 3443, 7296),]
+
+st_geometry(ca_may_clean_adj) <- "geometry"
+
+adj_ca_may_clean <- redist.adjacency(ca_may_clean_adj)
+
+redist_obj_ca_may <- redist_map(
+  data = ca_may_clean_adj,
+  pop = ca_may_clean_adj$total_pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_ca_may_clean
+) 
+
+plans_ca_may <- redist_smc(
+  redist_obj_ca_may,
+  nsims = 2,      # number of plans
+  runs = 1
+)
+
+plancamay1 <- get_plans_matrix(plans_ca_may)[, 1]
+
+mapca_may_plan1 <- redist_obj_ca_may$data |>
+  mutate(district = factor(plancamay1))
+
+mapca_maydistrict_plan1 <- mapca_may_plan1 |>
+  group_by(district)|>
+  summarize()
+
+potential_ca_may_map <- ggplot(mapca_may_plan1) +
+  geom_sf(aes(fill = district)) +
+  scale_fill_viridis_d() +
+  geom_sf(data = mapca_maydistrict_plan1, fill = NA, color = "black", linewidth = 1) +
+  theme_minimal()
+
+potential_ca_may_map
+
+# map with voting data 
+
+
+CA_aggreg2020 <- st_read("C:/Users/ximen/OneDrive/large files/CA_l2_2024_gen_stats_2020block.csv")
+
+
+
+CA_agregg11 <- CA_aggreg2020|>
+  mutate(GEOID11 = substr(geoid20, 1, 11))
+
+
+
+cols_to_fix <- c(
+  "voted_all", "reg_all",
+  "voted_gender_male", "reg_gender_male",
+  "voted_gender_female", "reg_gender_female",
+  "voted_party_democratic", "reg_party_democratic",
+  "voted_party_republican", "reg_party_republican",
+  "voted_age_18_19", "reg_age_18_19",
+  "voted_age_20_24", "reg_age_20_24",
+  "voted_age_25_29", "reg_age_25_29",
+  "voted_age_30_34", "reg_age_30_34",
+  "voted_age_35_44", "reg_age_35_44",
+  "voted_age_45_54", "reg_age_45_54",
+  "voted_age_55_64", "reg_age_55_64",
+  "voted_age_65_74", "reg_age_65_74",
+  "voted_age_75_84", "reg_age_75_84",
+  "voted_age_85over", "reg_age_85over"
+)
+
+
+CA_agregg11 <- CA_agregg11 |>
+  mutate(
+    voted_all = as.numeric(voted_all),
+    reg_all = as.numeric(reg_all),
+    
+    voted_gender_male = as.numeric(voted_gender_male),
+    reg_gender_male = as.numeric(reg_gender_male),
+    
+    voted_gender_female = as.numeric(voted_gender_female),
+    reg_gender_female = as.numeric(reg_gender_female),
+    
+    voted_party_democratic = as.numeric(voted_party_democratic),
+    reg_party_democratic = as.numeric(reg_party_democratic),
+    
+    voted_party_republican = as.numeric(voted_party_republican),
+    reg_party_republican = as.numeric(reg_party_republican),
+    
+    voted_age_18_19 = as.numeric(voted_age_18_19),
+    reg_age_18_19 = as.numeric(reg_age_18_19),
+    
+    voted_age_20_24 = as.numeric(voted_age_20_24),
+    reg_age_20_24 = as.numeric(reg_age_20_24),
+    
+    voted_age_25_29 = as.numeric(voted_age_25_29),
+    reg_age_25_29 = as.numeric(reg_age_25_29),
+    
+    voted_age_30_34 = as.numeric(voted_age_30_34),
+    reg_age_30_34 = as.numeric(reg_age_30_34),
+    
+    voted_age_35_44 = as.numeric(voted_age_35_44),
+    reg_age_35_44 = as.numeric(reg_age_35_44),
+    
+    voted_age_45_54 = as.numeric(voted_age_45_54),
+    reg_age_45_54 = as.numeric(reg_age_45_54),
+    
+    voted_age_55_64 = as.numeric(voted_age_55_64),
+    reg_age_55_64 = as.numeric(reg_age_55_64),
+    
+    voted_age_65_74 = as.numeric(voted_age_65_74),
+    reg_age_65_74 = as.numeric(reg_age_65_74),
+    
+    voted_age_75_84 = as.numeric(voted_age_75_84),
+    reg_age_75_84 = as.numeric(reg_age_75_84),
+    
+    voted_age_85over = as.numeric(voted_age_85over),
+    reg_age_85over = as.numeric(reg_age_85over)
+  )
+
+
+CA_agregg11_test <-  CA_agregg11 |>
+  group_by(GEOID11)|>
+  summarize( total_votes = sum(voted_all, na.rm = TRUE),
+             total_reg = sum(reg_all, na.rm = TRUE),
+             turnout_all = total_votes / total_reg,
+             male_vote = sum(voted_gender_male, na.rm = TRUE),
+             male_reg = sum(reg_gender_male, na.rm = TRUE),
+             female_vote = sum(voted_gender_female, na.rm = TRUE),
+             female_reg = sum(reg_gender_female, na.rm = TRUE),
+             dem_votes = sum(voted_party_democratic, na.rm = TRUE),
+             dem_reg = sum(reg_party_democratic, na.rm = TRUE),
+             rep_votes = sum(voted_party_republican, na.rm = TRUE),
+             rep_reg = sum(reg_party_republican, na.rm = TRUE),
+             VA_18_19 = sum(voted_age_18_19, na.rm = TRUE),
+             REG_18_19 = sum(reg_age_18_19, na.rm = TRUE),
+             VA_20_24 = sum(voted_age_20_24, na.rm = TRUE),
+             REG_20_24 = sum(reg_age_20_24, na.rm = TRUE),
+             VA_25_29 = sum(voted_age_25_29, na.rm = TRUE),
+             REG_25_29 = sum(reg_age_25_29, na.rm = TRUE),
+             VA_30_34 = sum(voted_age_30_34, na.rm = TRUE),
+             REG_30_34 = sum(reg_age_30_34, na.rm = TRUE),
+             VA_35_44 = sum(voted_age_35_44, na.rm = TRUE),
+             REG_35_44 = sum(reg_age_35_44, na.rm = TRUE),
+             VA_45_55 = sum(voted_age_45_54, na.rm = TRUE),
+             REG_45_55 = sum(reg_age_45_54, na.rm = TRUE),
+             VA_55_65 = sum(voted_age_55_64, na.rm = TRUE),
+             REG_55_64 = sum(reg_age_55_64, na.rm = TRUE),
+             VA_65_74 = sum(voted_age_65_74, na.rm = TRUE),
+             REG_65_74 = sum(reg_age_65_74, na.rm = TRUE),
+             VA_75_84 = sum(voted_age_75_84, na.rm = TRUE),
+             REG_75_84 = sum(reg_age_75_84, na.rm = TRUE),
+             VA_85_over = sum(voted_age_85over, na.rm = TRUE),
+             REG_85_over = sum(reg_age_85over, na.rm = TRUE)
+  )
+
+
+CA_vote_join <- inner_join(ca_may_clean, CA_agregg11_test, by = c("GEOID_11" = "GEOID11"))       
+
+
+adj_CA_vote <- redist.adjacency(CA_vote_join_clean)
+
+CA_vote_join_clean <- CA_vote_join[-c(3442, 3443, 7296),]
+
+redist_obj_ca_vote <- redist_map(
+  data = CA_vote_join_clean,
+  pop = CA_vote_join_clean$total_pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_CA_vote
+) 
+
+plans_ca_vote <- redist_smc(
+  redist_obj_ca_vote,
+  nsims = 2,      # number of plans
+  runs = 3,
+  ncores = 7
+)
+
+plan1_ca_vote <- get_plans_matrix(plans_ca_vote)[, 1]
+
+mapca_plan1 <- redist_obj_ca_vote$data |>
+  mutate(district = factor(plan1_ca_vote))
+
+
+
+mapca_plan1_vote <- mapca_plan1 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+  )
+
+mapca_plan1_vote <- mapca_plan1_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0)# Percentage lead
+  )    
+
+
+mapca_district_plan1 <- mapca_plan1 |>
+  group_by(district)|>
+  summarize()
+
+
+ca_vote_district_map1 <- ggplot(mapca_plan1_vote) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 0.5)+
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for California: Win Margins",
+       fill = "Lead %")
+ca_vote_district_map1 
+
+sum(mapca_plan1_vote$d_winner)
+nrow(mapca_plan1_vote)-sum(mapca_plan1_vote$d_winner)
+
+
