@@ -805,7 +805,7 @@ ladistrict_results60 <- ladistrict_results60 |>
   )    
 
 
-ggplot(ladistrict_results60) +
+la_map60 <- ggplot(ladistrict_results60) +
   geom_sf(aes(fill = margin_pct)) +
   scale_fill_gradient2(
     low = "red",         # Strong Republican
@@ -3250,4 +3250,795 @@ mapca3
 
 sum(mapca_plan3_vote$d_winner)
 nrow(mapca_plan3_vote)-sum(mapca_plan3_vote$d_winner)
->>>>>>> 79e0361e8e6509c3aab643f91e9130fd151bcfee
+
+# socal
+
+join_mapca_vote <- inner_join(map_ca, st_drop_geometry(CA_vote_join), by = c("tract" = "GEOID_11"))  
+
+
+
+socal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(38:53))
+
+#then create redist plans on those sections 
+
+adj_socal <- redist.adjacency(socal_district_clean)
+
+
+socal_district_clean <- socal_districts[-c(589, 590, 1603, 1604, 1605), ]
+
+socal_map2 <- redist_map(
+  socal_district_clean,
+  pop_tol = 0.01,
+  ndists = 18,   # or however many districts you want to draw
+  total_pop = socal_district_clean$pop,
+  adj = adj_socal
+)
+
+socal_map2$d_points <- socal_map2$dem_votes - socal_map2$rep_votes
+socal_map2$ones <- rep(1,2442)
+
+plans_socal2 <- redist_smc(
+  socal_map2,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_socal2 <- plans_socal2|>
+  mutate(D_points = group_frac(socal_map2, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+soca_bar <- plans_socal2|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+plan50_socal2 <- get_plans_matrix(plans_socal2)[, 52]
+
+socal2_plan50 <- socal_map2 |>
+  mutate(district = factor(plan50_socal2))
+
+
+
+socal2_plan50_vote <- socal2_plan50 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+socal2_plan50_vote <- socal2_plan50_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+socal2map50_district_plan50 <- socal2_plan50 |>
+  group_by(district)|>
+  summarize()
+
+sum(mapca_plan1_vote$d_winner)
+nrow(socal2_plan50_vote)-sum(socal2_plan50_vote$d_winner)
+#15 is 43 dem
+#1
+
+socal2_plan50_vote$margin_bin <- cut(
+  socal2_plan50_vote$margin_pct,
+  breaks = c(-Inf, -0.15, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +15% to or more",
+    "R +15% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+Socal2_plan52_map <- ggplot(socal2_plan50_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = socal2map50_district_plan50, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for SoCal: Win Margins")
+
+Socal2_plan52_map
+
+# norcal
+
+norcal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(1:19))
+
+#then create redist plans on those sections 
+
+norcal_district_clean <- norcal_districts[-c(1983, 2176, 2177), ]
+
+adj_norcal <- redist.adjacency(norcal_district_clean)
+
+
+norcal_map <- redist_map(
+  norcal_district_clean,
+  pop_tol = 0.01,
+  ndists = 18,   # or however many districts you want to draw
+  total_pop = "pop",
+  adj = adj_norcal
+)
+
+norcal_map$d_points <- norcal_map$dem_votes - norcal_map$rep_votes
+norcal_map$ones <- rep(1,3364)
+
+plans_norcal <- redist_smc(
+  norcal_map,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_norcal <- plans_norcal|>
+  mutate(D_points = group_frac(norcal_map, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+norca_bar <- plans_norcal|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+plan100_norcal <- get_plans_matrix(plans_norcal)[, 2]
+
+norcal_plan100 <- norcal_map |>
+  mutate(district = factor(plan100_norcal))
+
+
+
+norcal_plan100_vote <- norcal_plan100 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+norcal_plan100_vote <- norcal_plan100_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+norcal_district_plan100 <- norcal_plan100 |>
+  group_by(district)|>
+  summarize()
+
+sum(mapca_plan1_vote$d_winner)
+nrow(norcal_plan100_vote)-sum(norcal_plan100_vote$d_winner)
+#15 is 43 dem
+#1
+
+norcal_plan100_vote$margin_bin <- cut(
+  norcal_plan100_vote$margin_pct,
+  breaks = c(-Inf, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +10% to or more",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+norcal_plan100_map <- ggplot(norcal_plan100_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +10% to or more"  = "#67001f",
+      "R +10% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"    = "#d6604d",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = norcal_district_plan100, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for NorCal: Win Margins")
+
+norcal_plan100_map
+
+
+#midcal
+
+midcal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(20:37))
+
+#then create redist plans on those sections 
+
+midcal_districts_clean <- midcal_districts[-c(2273), ]
+
+adj_midcal <- redist.adjacency(midcal_districts_clean)
+
+
+midcal_map <- redist_map(
+  midcal_districts_clean,
+  pop_tol = 0.01,
+  ndists = 16,   # or however many districts you want to draw
+  total_pop = "pop",
+  adj = adj_midcal
+)
+
+midcal_map$d_points <- midcal_map$dem_votes - midcal_map$rep_votes
+midcal_map$ones <- rep(1,3314)
+
+plans_midcal <- redist_smc(
+  midcal_map,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_midcal <- plans_midcal|>
+  mutate(D_points = group_frac(midcal_map, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+
+midca_bar <- plans_midcal|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+
+plan25_midcal <- get_plans_matrix(plans_midcal)[, 36]
+
+midcal_plan25 <- midcal_map |>
+  mutate(district = factor(plan25_midcal))
+
+
+
+midcal_plan25_vote <- midcal_plan25 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+midcal_plan25_vote <- midcal_plan25_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+midcal_district_plan25 <- midcal_plan25 |>
+  group_by(district)|>
+  summarize()
+
+sum(midcal_plan25_vote$d_winner)
+nrow(midcal_plan25_vote)-sum(midcal_plan25_vote$d_winner)
+
+
+midcal_plan25_vote$margin_bin <- cut(
+  midcal_plan25_vote$margin_pct,
+  breaks = c(-Inf, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +10% to or more",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+midcal_plan36_map <- ggplot(midcal_plan25_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +10% to or more"  = "#67001f",
+      "R +10% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"    = "#d6604d",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = midcal_district_plan25, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for MidCal: Win Margins")
+
+midcal_plan36_map
+
+
+## new portions
+ #norcal
+
+norcal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(1:22))
+
+#then create redist plans on those sections 
+
+norcal_district_clean <- norcal_districts[-c(1256, 2418, 2611, 2612), ]
+
+adj_norcal <- redist.adjacency(norcal_district_clean)
+
+
+norcal_map <- redist_map(
+  norcal_district_clean,
+  pop_tol = 0.01,
+  ndists = 10,   # or however many districts you want to draw
+  total_pop = "pop",
+  adj = adj_norcal
+)
+
+norcal_map$d_points <- norcal_map$dem_votes - norcal_map$rep_votes
+norcal_map$ones <- rep(1,3901)
+
+plans_norcal <- redist_smc(
+  norcal_map,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_norcal <- plans_norcal|>
+  mutate(D_points = group_frac(norcal_map, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+norca_bar <- plans_norcal|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+plan100_norcal <- get_plans_matrix(plans_norcal)[, 3]
+
+norcal_plan100 <- norcal_map |>
+  mutate(district = factor(plan100_norcal))
+
+
+
+norcal_plan100_vote <- norcal_plan100 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+norcal_plan100_vote <- norcal_plan100_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+norcal_district_plan100 <- norcal_plan100 |>
+  group_by(district)|>
+  summarize()
+
+
+norcal_plan100_vote$margin_bin <- cut(
+  norcal_plan100_vote$margin_pct,
+  breaks = c(-Inf, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +10% to or more",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+norcal_plan3_map <- ggplot(norcal_plan100_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +10% to or more"  = "#67001f",
+      "R +10% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"    = "#d6604d",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = norcal_district_plan100, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for NorCal: Win Margins")
+
+norcal_plan3_map
+
+# new midcal 
+
+
+midcal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(23:37))
+
+#then create redist plans on those sections 
+
+midcal_districts_clean <- midcal_districts[-c(1838), ]
+
+adj_midcal <- redist.adjacency(midcal_districts_clean)
+
+
+midcal_map <- redist_map(
+  midcal_districts_clean,
+  pop_tol = 0.01,
+  ndists = 19,   # or however many districts you want to draw
+  total_pop = "pop",
+  adj = adj_midcal
+)
+
+midcal_map$d_points <- midcal_map$dem_votes - midcal_map$rep_votes
+midcal_map$ones <- rep(1,2776)
+
+plans_midcal <- redist_smc(
+  midcal_map,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_midcal <- plans_midcal|>
+  mutate(D_points = group_frac(midcal_map, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+
+midca_bar <- plans_midcal|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+
+plan25_midcal <- get_plans_matrix(plans_midcal)[, 3]
+
+midcal_plan25 <- midcal_map |>
+  mutate(district = factor(plan25_midcal))
+
+
+
+midcal_plan25_vote <- midcal_plan25 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+midcal_plan25_vote <- midcal_plan25_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+midcal_district_plan25 <- midcal_plan25 |>
+  group_by(district)|>
+  summarize()
+
+
+midcal_plan25_vote$margin_bin <- cut(
+  midcal_plan25_vote$margin_pct,
+  breaks = c(-Inf, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +10% to or more",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+midcal_plan3_map <- ggplot(midcal_plan25_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +10% to or more"  = "#67001f",
+      "R +10% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"    = "#d6604d",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = midcal_district_plan25, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for MidCal: Win Margins")
+
+midcal_plan3_map
+
+# new socal
+
+
+
+socal_districts <- join_mapca_vote |>
+  filter(cd_2020 %in% c(38:53))
+
+#then create redist plans on those sections 
+
+adj_socal <- redist.adjacency(socal_district_clean)
+
+
+socal_district_clean <- socal_districts[-c(589, 590, 1603, 1604, 1605), ]
+
+socal_map2 <- redist_map(
+  socal_district_clean,
+  pop_tol = 0.01,
+  ndists = 23,   # or however many districts you want to draw
+  total_pop = socal_district_clean$pop,
+  adj = adj_socal
+)
+
+socal_map2$d_points <- socal_map2$dem_votes - socal_map2$rep_votes
+socal_map2$ones <- rep(1,2442)
+
+plans_socal2 <- redist_smc(
+  socal_map2,
+  nsims = 50,
+  runs = 2,
+  ncores = 7,
+  compactness = 1.0
+)
+
+plans_socal2 <- plans_socal2|>
+  mutate(D_points = group_frac(socal_map2, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+soca_bar <- plans_socal2|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+plan50_socal2 <- get_plans_matrix(plans_socal2)[, 1]
+
+socal2_plan50 <- socal_map2 |>
+  mutate(district = factor(plan50_socal2))
+
+
+
+socal2_plan50_vote <- socal2_plan50 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+socal2_plan50_vote <- socal2_plan50_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+socal2map50_district_plan50 <- socal2_plan50 |>
+  group_by(district)|>
+  summarize()
+
+
+
+socal2_plan50_vote$margin_bin <- cut(
+  socal2_plan50_vote$margin_pct,
+  breaks = c(-Inf, -0.15, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +15% to or more",
+    "R +15% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+Socal2_plan1_map <- ggplot(socal2_plan50_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = socal2map50_district_plan50, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for SoCal: Win Margins")
+
+Socal2_plan1_map
+
+
+ggplot()+
+  geom_sf(data = norcal_plan100_vote)+
+  geom_sf(data= midcal_plan25_vote)+
+  geom_sf(data = socal2_plan50_vote, aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  )
+
+
