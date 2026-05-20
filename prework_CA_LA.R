@@ -2355,7 +2355,11 @@ ladistrict_results <- mapla_plan1_2|>
     total_pop = sum(pop),
     total_black = sum(pop_black, na.rm = TRUE),
     total_hispanic = sum(pop_hisp, na.rm = TRUE),
-    total_white = sum(pop_white, na.rm = TRUE)
+    total_white = sum(pop_white, na.rm = TRUE),
+    total_vap       = sum(vap, na.rm = TRUE),
+    total_vap_hisp  = sum(vap_hisp, na.rm = TRUE),
+    total_vap_white = sum(vap_white, na.rm = TRUE),
+    total_vap_black = sum(vap_black, na.rm = TRUE)
   )
   
 
@@ -2366,8 +2370,13 @@ ladistrict_results <- ladistrict_results|>
            d_prop > 0.5 ~ "Democratic",
            r_prop > 0.5 ~ "Republican",
            TRUE         ~ "Tie/Other"),
-           total_minor = (total_black+total_hispanic),
-           pct_minority = ( total_minor / total_pop * 100)
+           total_minority = (total_black+total_hispanic),
+         total_minority_vap = (total_vap_hisp + total_vap_black),
+           pct_minority = ( total_minor / total_pop * 100),
+         pct_vap_hisp  = total_vap_hisp  / total_vap * 100,
+         pct_vap_white = total_vap_white / total_vap * 100,
+         pct_vap_black = total_vap_black / total_vap * 100,
+         pct_minority_vap = total_minor_vap / total_vap * 100
   )
 
 ladistrict_results <- ladistrict_results |>
@@ -2435,19 +2444,38 @@ mapla1 <- ggplot(ladistrict_results) +
   labs(title = "Proposed Redistricting for Louisiana: Win Margins")
 mapla1
 
-ggplot(ladistrict_results) +
-  geom_sf(aes(fill = margin_pct)) +
-  scale_fill_gradient2(
-    low = "red",         # Strong Republican
-    mid = "white",       # Toss-up
-    high = "blue",       # Strong Democratic
-    midpoint = 0,        # 0 means a perfect tie
-    labels = scales::percent
-  ) +
-  geom_sf(data = mapla_district_plan1_2, fill = NA, color = "black", linewidth = 0.5)+
-  geom_sf_text(data = ladistrict_results, aes(label = paste0(round(pct_minority), "%")), size = 3, color = "black") +
-  theme_minimal()
+#tmap for LA
 
+m_la <- 
+  tm_shape(ladistrict_results) +
+  tm_polygons(
+    col = "margin_bin",
+    palette = c(
+      "R +60% or more" = "#67001f",
+      "R +60% to R +30%" = "#b2182b",
+      "R +30% to R +10%" = "#d6604d",
+      "R +10% to R +1%" = "#f4a582",
+      "R +1% to 0%" = "#fddbc7",
+      "0% to D +1%" = "#d1e5f0",
+      "D +1% to D +10%" = "#92c5de",
+      "D +10% to D +20%" = "#4393c3",
+      "D +20% to D +30%" = "#2166ac",
+      "D +30% or more" = "#053061"
+    ),
+    title = "Margin %",
+    popup.vars = TRUE
+  ) +
+  tm_shape(mapla_district_plan1_2) +
+  tm_borders(col = "black", lwd = 1) +
+  tm_shape(ladistrict_results) +
+  tm_layout(
+    title = "Proposed Redistricting for Louisiana: Win Margins",
+    legend.outside = TRUE
+  )
+
+m_la
+
+tmap_save(m_la, "mapla1_interactive.html")
 
 
 #ANOTHER MAP 
