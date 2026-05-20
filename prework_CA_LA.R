@@ -2275,11 +2275,11 @@ precincts2024_ximena <- precincts2024_ximena|>
          winner = case_when(
            d_prop > 0.5 ~ "Democratic",
            r_prop > 0.5 ~ "Republican",
-           TRUE         ~ "Tie/Other"
+           TRUE         ~ "Tie/Other",
          ))
 
 
-LA_map_grouping2 <- precincts2024_ximena |>
+LA_map_grouping2 <- precincts2024ximena |>
   group_by(GEOID20)|>
   summarize( total_votes = sum(total_votes),
              total_demo = sum(democrat),
@@ -2294,6 +2294,8 @@ join_vtd_pop2 <- LA_map_grouping2|>
 join_vtd_pop2_filter <- join_vtd_pop2|>
   mutate(pop = replace_na(pop, 0))
 
+
+save(join_vtd_pop2_filter, file = "LA_redist_data.RData")
 adj_la <- redist.adjacency(join_vtd_pop2_filter)
 
 redist_obj_la2 <- redist_map(
@@ -2304,6 +2306,8 @@ redist_obj_la2 <- redist_map(
   adj = adj_la
 )
 
+redist_obj_la2$d_points <- redist_obj_la2$data$total_demo - redist_obj_la2$data$total_rep
+redist_obj_la2$ones <- rep(1,3639)
 
 plans_la2 <- redist_smc(
   redist_obj_la2,
@@ -2312,7 +2316,19 @@ plans_la2 <- redist_smc(
 )
 
 
-planla1_2 <- get_plans_matrix(plans_la2)[, 1]
+plans_la2 <- plans_la2|>
+  mutate(D_points = group_frac(redist_obj_la2, d_points, ones),
+         r_winner = ifelse(D_points < 0, 1, 0 ))
+
+LA_bar <- plans_la2|>
+  group_by(draw)|>
+  summarize(r_winner = sum(r_winner))|>
+  ungroup()|>
+  arrange(r_winner)
+
+
+
+planla1_2 <- get_plans_matrix(plans_la2)[, 5]
 
 mapla_plan1_2 <- redist_obj_la2$data |>
   mutate(district = factor(planla1_2))
@@ -2335,8 +2351,13 @@ ladistrict_results <- mapla_plan1_2|>
   summarize(
     total_dem = sum(total_demo, na.rm = TRUE),
     total_rep = sum(total_rep, na.rm = TRUE),
-    total_votes = sum(total_votes)
+    total_votes = sum(total_votes),
+    total_pop = sum(pop),
+    total_black = sum(pop_black, na.rm = TRUE),
+    total_hispanic = sum(pop_hisp, na.rm = TRUE),
+    total_white = sum(pop_white, na.rm = TRUE)
   )
+  
 
 ladistrict_results <- ladistrict_results|>
   mutate(d_prop = (total_dem/total_votes),
@@ -2344,20 +2365,90 @@ ladistrict_results <- ladistrict_results|>
          winner = case_when(
            d_prop > 0.5 ~ "Democratic",
            r_prop > 0.5 ~ "Republican",
-           TRUE         ~ "Tie/Other"
-         ))
+           TRUE         ~ "Tie/Other"),
+           total_minor = (total_black+total_hispanic),
+           pct_minority = ( total_minor / total_pop * 100)
+  )
 
-ggplot(ladistrict_results) +
-  geom_sf(aes(fill = winner)) +
+ladistrict_results <- ladistrict_results |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes # Percentage lead
+  )    
+
+ladistrict_results$margin_bin <- cut(
+  ladistrict_results$margin_pct,
+  breaks = c(-Inf, -0.60, -0.30, -0.10, -0.01, 0, 0.01, 0.10, 0.20, 0.30, Inf),
+  labels = c(
+    "R +60% or more",
+    "R +60% to R +30%",
+    "R +30% to R +10%",
+    "R +10% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +30%",
+    "D +30% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+scale_fill_manual(
+  values = c(
+    "R +60% or more"     = "#67001f",
+    "R +60% to R +30%"   = "#b2182b",
+    "R +30% to R +10%"    = "#d6604d",
+    "R +10% to R +1%"     = "#f4a582",
+    "R +1% to 0%"        = "#fddbc7",
+    "0% to D +1%"        = "#d1e5f0",
+    "D +1% to D +10%"    = "#92c5de",
+    "D +10% to D +20%"   = "#4393c3",
+    "D +20% to D +30%"   = "#2166ac",
+    "D +30% or more"     = "#053061"
+  ),
+  name = "Margin %"
+)
+
+
+mapla1 <- ggplot(ladistrict_results) +
+  geom_sf(aes(fill = margin_bin)) +
   scale_fill_manual(
     values = c(
-      "Democratic" = "#2E5B88", # Standard Blue
-      "Republican" = "#D73027", # Standard Red
-      "Tie/Other"  = "#CCCCCC"  # Gray for ties
+      "R +60% or more"     = "#67001f",
+      "R +60% to R +30%"   = "#b2182b",
+      "R +30% to R +10%"    = "#d6604d",
+      "R +10% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +30%"   = "#2166ac",
+      "D +30% or more"     = "#053061"
     ),
-    name = "Winner") +
-  geom_sf(data = mapla_district_plan1_2, fill = NA, color = "black", linewidth = 0.5)
-theme_minimal()
+    name = "Margin %"
+  ) +
+  geom_sf(data = mapla_district_plan1_2, fill = NA, color = "black", linewidth = 0.5)+
+  geom_sf_text(data = ladistrict_results, aes(label = paste0(round(pct_minority), "%")), size = 3, color = "black") +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for Louisiana: Win Margins")
+mapla1
+
+ggplot(ladistrict_results) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapla_district_plan1_2, fill = NA, color = "black", linewidth = 0.5)+
+  geom_sf_text(data = ladistrict_results, aes(label = paste0(round(pct_minority), "%")), size = 3, color = "black") +
+  theme_minimal()
+
+
 
 #ANOTHER MAP 
 
@@ -3729,7 +3820,7 @@ norcal_district_plan100 <- norcal_plan100 |>
 
 norcal_plan100_vote$margin_bin <- cut(
   norcal_plan100_vote$margin_pct,
-  breaks = c(-Inf, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  breaks = c(-Inf, -0.15, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
   labels = c(
     "R +10% to or more",
     "R +10% to R +5%",
@@ -4041,4 +4132,238 @@ ggplot()+
     name = "Margin %"
   )
 
+combined <- bind_rows(norcal_plan100_vote, midcal_plan25_vote, socal2_plan50_vote)
 
+ggplot(combined)+
+  geom_sf(aes(geometry = geometry, fill = margin_bin))+
+  scale_fill_manual(
+    values = c(
+      "R +15% to or 5%"  = "#67001f",
+      "R +15% to R +5%"   = "#b2182b",
+      "R +5% to R +1%"    = "#d6604d",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for Cal: Win Margins")
+
+save(combined, file = "CA_combined.RData")
+
+
+#fix adjcacency 
+
+redist_obj_ca_vote <- redist_map(
+  data = CA_vote_join,
+  pop = CA_vote_join$total_pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_CA_vote
+) 
+
+#### Fix adjacency
+# vector of precincts to fix; copied from error message
+bad_precincts <- c(3442, 3443, 7296)
+
+# Function to add adjacency; creates a connection between row1 and row2
+add_adjacency <- function(adj_data, precinct1, precinct2) {
+  # add precinct2 to adjacencies for precinct1
+  # !!!NOTE!!! 
+  # precinct numbers within adjacency vectors are zero-indexed, 
+  # while elements of the list are not
+  # Need to subtract 1 from precinct added to adjacency list to make it zero-indexed
+  adj_data[[precinct1]] <- unique(c(adj_data[[precinct1]], precinct2 - 1))
+  # add precinct1 to adjacencies for precinct2
+  adj_data[[precinct2]] <- unique(c(adj_data[[precinct2]], precinct1 - 1))
+  adj_data
+}
+
+# Function to fix adjacency for a specified precinct 
+fix_adjacency <- function(adj_data, sf_data, precinct){
+  # compute distances from the precinct to other precincts
+  distances <- st_distance(sf_data[precinct,], sf_data) |> as.numeric()
+  # find shortest nonzero distance to another precinct
+  shortest_dist <- min(distances[distances != 0])
+  # add a connection between input precinct and closest other precinct
+  adj_data <- add_adjacency(adj_data, precinct, which(distances == shortest_dist))
+  adj_data
+}
+
+for(precinct in bad_precincts) {
+  adj_CA_vote <- fix_adjacency(adj_CA_vote, CA_vote_join, precinct)
+}
+
+# re-run redist_map function; now no errors
+redist_obj_ca_vote <- redist_map(
+  data = CA_vote_join,
+  pop = CA_vote_join$total_pop,
+  ndists = 52,
+  pop_tol = 0.01,
+  adj = adj_CA_vote
+) 
+
+plans_ca_vote <- redist_smc(
+  redist_obj_ca_vote,
+  nsims = 20,      # number of plans
+  runs = 1,
+  ncores = 7
+)
+
+plan1_ca_vote <- get_plans_matrix(plans_ca_vote)[, 10]
+
+mapca_plan1 <- redist_obj_ca_vote$data |>
+  mutate(district = factor(plan1_ca_vote))
+
+
+
+mapca_plan1_vote <- mapca_plan1 |>
+  group_by(district) |>
+  summarize(
+    total_votes = sum(total_votes),
+    total_dem = sum(dem_votes, na.rm = TRUE),
+    total_rep = sum(rep_votes, na.rm = TRUE),
+    total_vap = sum(total_vap),
+    total_vap_hisp = sum(total_vap_hisp),
+    total_vap_asian =sum(total_vap_asian),
+    total_vap_black = sum(total_vap_black),
+    total_vap_white = sum(total_vap_white),
+    total_18_19 = sum(VA_18_19),
+    total_20_24 = sum(VA_20_24),
+    total_25_29 = sum(VA_25_29)
+  )
+
+mapca_plan1_vote <- mapca_plan1_vote |>
+  mutate(
+    vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
+    margin_pct = (total_dem - total_rep) / total_votes,
+    d_winner = ifelse(vote_diff > 0, 1, 0),
+    pct_va_18_19 = total_18_19/total_vap *100,
+    pct_va_20_24 = total_20_24/total_vap *100,
+    pct_va_25_29 = total_25_29/total_vap *100,
+    pct_vap_hisp = total_vap_hisp/total_vap *100,
+    pct_vap_black = total_vap_black/total_vap *100,
+    pct_vap_white = total_vap_white/total_vap *100,
+    pct_vap_asian = total_vap_asian/total_vap *100# Percentage lead
+  )    
+
+
+mapca_district_plan1 <- mapca_plan1 |>
+  group_by(district)|>
+  summarize()
+
+
+ca_vote_district_map1 <- ggplot(mapca_plan1_vote) +
+  geom_sf(aes(fill = margin_pct)) +
+  scale_fill_gradient2(
+    low = "red",         # Strong Republican
+    mid = "white",       # Toss-up
+    high = "blue",       # Strong Democratic
+    midpoint = 0,        # 0 means a perfect tie
+    labels = scales::percent
+  ) +
+  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 0.5)+
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for California: Win Margins",
+       fill = "Lead %")
+ca_vote_district_map1 
+
+sum(mapca_plan1_vote$d_winner)
+nrow(mapca_plan1_vote)-sum(mapca_plan1_vote$d_winner)
+
+
+mapca_plan1_vote$margin_bin <- cut(
+  mapca_plan1_vote$margin_pct,
+  breaks = c(-Inf, -0.15, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
+  labels = c(
+    "R +15% or more",
+    "R +15% to R +10%",
+    "R +10% to R +5%",
+    "R +5% to R +1%",
+    "R +1% to 0%",
+    "0% to D +1%",
+    "D +1% to D +10%",
+    "D +10% to D +20%",
+    "D +20% to D +50%",
+    "D +50% or more"
+  ),
+  include.lowest = TRUE,
+  right = FALSE
+)
+
+scale_fill_manual(
+  values = c(
+    "R +15% or more"     = "#67001f",
+    "R +15% to R +10%"   = "#b2182b",
+    "R +10% to R +5%"    = "#d6604d",
+    "R +5% to R +1%"     = "#f4a582",
+    "R +1% to 0%"        = "#fddbc7",
+    "0% to D +1%"        = "#d1e5f0",
+    "D +1% to D +10%"    = "#92c5de",
+    "D +10% to D +20%"   = "#4393c3",
+    "D +20% to D +50%"   = "#2166ac",
+    "D +50% or more"     = "#053061"
+  ),
+  name = "Margin %"
+)
+
+
+mapca1 <- ggplot(mapca_plan1_vote) +
+  geom_sf(aes(fill = margin_bin)) +
+  scale_fill_manual(
+    values = c(
+      "R +15% or more"     = "#67001f",
+      "R +15% to R +10%"   = "#b2182b",
+      "R +10% to R +5%"    = "#d6604d",
+      "R +5% to R +1%"     = "#f4a582",
+      "R +1% to 0%"        = "#fddbc7",
+      "0% to D +1%"        = "#d1e5f0",
+      "D +1% to D +10%"    = "#92c5de",
+      "D +10% to D +20%"   = "#4393c3",
+      "D +20% to D +50%"   = "#2166ac",
+      "D +50% or more"     = "#053061"
+    ),
+    name = "Margin %"
+  ) +
+  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 0.5) +
+  theme_minimal() +
+  labs(title = "Proposed Redistricting for California: Win Margins")
+mapca1
+
+
+#tmap of above map
+
+
+tmap_mode("view")
+
+tm_mapca <- tm_shape(mapca_plan1_vote) +
+  tm_polygons(
+    col = "margin_bin",
+    palette = c(
+      "R +15% or more" = "#67001f",
+      "R +15% to R +10%" = "#b2182b",
+      "R +10% to R +5%" = "#d6604d",
+      "R +5% to R +1%" = "#f4a582",
+      "R +1% to 0%" = "#fddbc7",
+      "0% to D +1%" = "#d1e5f0",
+      "D +1% to D +10%" = "#92c5de",
+      "D +10% to D +20%" = "#4393c3",
+      "D +20% to D +50%" = "#2166ac",
+      "D +50% or more" = "#053061"
+    ),
+    title = "Margin %",
+    popup.vars = TRUE
+  ) +
+  tm_shape(mapca_district_plan1) +
+  tm_borders(col = "black", lwd = 0.7) +
+  tm_layout(
+    title = "Proposed Redistricting for California: Win Margins",
+    legend.outside = TRUE
+  )
+
+
+tmap_save(tm_mapca, "mapca_plan1_interactive.html")
