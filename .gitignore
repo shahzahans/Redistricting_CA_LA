@@ -1,10 +1,12 @@
-.Rproj.user
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
 *.geojson
 *.rds
-ca_cvap_2024_bg.csv
-Data_Folder/
 *.zip
 *.pdf
+*.csv
+Data_Folder/.Rproj.user/
+.Rhistory
+.DS_Store
