@@ -417,48 +417,66 @@ redist_obj_ca_vote_t$ones <- rep(1,9129)
 
 
 
-set.seed(1)
-plans_ca_vote_t <- redist_smc(
+
+plans_ca_vote_t_2 <- redist_smc(
   redist_obj_ca_vote_t,
-  nsims = 20,      # number of plans
+  nsims = 3000,      # number of plans
   runs = 1,
   ncores = 7,
   compactness = 1
 )
 
 
-plans_ca_vote_t <- plans_ca_vote_t |>
-  mutate(reock = comp_reock(plans_ca_vote_t, shp = CA_vote_join_projected))
 
+plans_ca_vote_t_2 <- plans_ca_vote_t_2|>
+  mutate(reock = comp_reock(plans_ca_vote_t_2, shp = CA_vote_join_projected))
 
-plans_ca_vote_t <- plans_ca_vote_t|>
+plans_ca_vote_t_2 <- plans_ca_vote_t_2 |>
+  mutate(reock = comp_reock(plans_ca_vote_t_2, shp = CA_vote_join_projected))
+
+plans_ca_vote_t_2 <- plans_ca_vote_t_2 |>
+  mutate(polsby = comp_polsby(plans_ca_vote_t_2, shp = CA_vote_join_projected))
+
+plans_ca_vote_t_2 <- plans_ca_vote_t_2|>
   mutate(D_points = group_frac(redist_obj_ca_vote_t, d_points, ones),
          r_winner = ifelse(D_points < 0, 1, 0 ))
 
 
-CA_bar_t <- plans_ca_vote_t|>
+CA_bar_t_2 <- plans_ca_vote_t_2|>
   group_by(draw)|>
   summarize(r_winner = sum(r_winner))|>
   ungroup()|>
   arrange(r_winner)
 
-CA_bar_t
+saveRDS(plans_ca_vote_t_2, file = "proposed_maps_ca.rds")
 
 
-best_average_plan_r <- plans_ca_vote_t |>
+best_average_plan_r <- plans_ca_vote_t_2 |>
   group_by(draw) |>
   summarize(avg_reock = mean(reock, na.rm = TRUE)) |>
   arrange(desc(avg_reock)) 
 
 
-plan1_ca_vote_t <- get_plans_matrix(plans_ca_vote_t)[, 8]
+best_average_plan <- plans_ca_vote_t_2 |>
+  group_by(draw) |>
+  summarize(avg_polsby = mean(polsby, na.rm = TRUE)) |>
+  arrange(desc(avg_polsby)) 
 
+
+plan1_ca_vote_t <- get_plans_matrix(plans_ca_vote_t)[, 4]
 mapca_polsby <- redist_obj_ca_vote_t$data |>
   mutate(district = factor(plan1_ca_vote_t))
 
+#using ashers code
+
+best_reock_vector <- get_plans_matrix(best_reock)[, 51236]
+
+mapca_reock <- redist_obj_ca_vote_t$data |>
+  mutate(district = factor(best_reock_vector))
 
 
-mapca_plan1_vote_t <- mapca_polsby |>
+
+mapca_plan_vote_t <- mapca_reock |>
   group_by(district) |>
   summarize(
     total_votes = sum(total_votes),
@@ -474,7 +492,7 @@ mapca_plan1_vote_t <- mapca_polsby |>
     total_25_29 = sum(VA_25_29)
   )
 
-mapca_plan1_vote_t <- mapca_plan1_vote_t |>
+mapca_plan_vote_t <- mapca_plan_vote_t |>
   mutate(
     vote_diff = total_dem - total_rep,            # Positive = Dem won, Negative = Rep won
     margin_pct = (total_dem - total_rep) / total_votes,
@@ -491,32 +509,17 @@ mapca_plan1_vote_t <- mapca_plan1_vote_t |>
   )    
 
 
-mapca_district_plan1_t <- mapca_polsby |>
+mapca_district_plan1_t <- mapca_reock|>
   group_by(district)|>
   summarize()
 
-
-ca_vote_district_map1 <- ggplot(mapca_plan1_vote_t) +
-  geom_sf(aes(fill = margin_pct)) +
-  scale_fill_gradient2(
-    low = "red",         # Strong Republican
-    mid = "white",       # Toss-up
-    high = "blue",       # Strong Democratic
-    midpoint = 0,        # 0 means a perfect tie
-    labels = scales::percent
-  ) +
-  geom_sf(data = mapca_district_plan1, fill = NA, color = "black", linewidth = 0.5)+
-  theme_minimal() +
-  labs(title = "Proposed Redistricting for California: Win Margins",
-       fill = "Lead %")
-ca_vote_district_map1 
 
 
 nrow(mapca_plan1_vote)-sum(mapca_plan1_vote$d_winner)
 
 
-mapca_plan1_vote_t$margin_bin <- cut(
-  mapca_plan1_vote_t$margin_pct,
+mapca_plan_vote_t$margin_bin <- cut(
+  mapca_plan_vote_t$margin_pct,
   breaks = c(-Inf, -0.15, -0.10, -0.05, -0.01, 0, 0.01, 0.10, 0.20, 0.50, Inf),
   labels = c(
     "R +15% or more",
@@ -563,7 +566,7 @@ mapca1_t
 
 tmap_mode("view")
 
-tm_mapca_t <- tm_shape(mapca_plan1_vote_t) +
+tm_mapca_t <- tm_shape(mapca_plan_vote_t) +
   tm_polygons(
     col = "margin_bin",
     palette = c(
@@ -589,6 +592,12 @@ tm_mapca_t <- tm_shape(mapca_plan1_vote_t) +
   )
 tm_mapca_t
 
+tmap_save(tm_mapca_t, "my_calimap.html")
+
+saveRDS(mapca_plan_vote_t, file = "California_proposed_data.rds")
+
+
+saveRDS(map_ca, file = "Map_Ca")
 ### roeck for LA 
 
 
@@ -634,7 +643,7 @@ best_la_average_plan_r <- plans_la2_p |>
   summarize(avg_reock = mean(reock, na.rm = TRUE)) |>
   arrange(desc(avg_reock))
 
-planla1_p <- get_plans_matrix(plans_la2_p)[, 67]
+planla1_p <- get_plans_matrix(plans_la2_p)[, 36]
 
 mapla_polsby <- redist_obj_la2_p$data |>
   mutate(district = factor(planla1_p))
@@ -730,3 +739,21 @@ m_la_p <-
   )
 
 m_la_p
+
+
+
+
+#### checking reock of old california map 2020
+
+reock_scores_2020 <- map_ca |>
+  group_by(cd_2020) |>
+  summarize(geometry = st_union(geometry)) |>
+  mutate(
+    area = st_area(geometry),
+    circle = st_minimum_bounding_circle(geometry),
+    circle_area = st_area(circle),
+    reock = as.numeric(area / circle_area)
+  )
+
+reock_scores_2020 |>
+  summarize(avg_reock = mean(reock, na.rm = TRUE))
