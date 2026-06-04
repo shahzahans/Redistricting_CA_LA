@@ -20,7 +20,7 @@ Ultimately, this project demonstrates that redistricting involves more than simp
 Every 10 years, electoral district boundaries are redrawn to reflect the constantly shifting and growing population and to ensure fair and equal representation. However, the new proposed redistricting plans may face legal challenges, forcing states to redraw their district boundaries mid-decade. Such was the case for the two states this report will be focusing on: California and Louisiana. 
 
 # California Redistricting
-In 2025, Texas’s new congressional map sought to add up to 5 Republican districts to help Trump and the Grand Old Party (GOP) in the midterm elections. To counteract these changes, California Governor Gavin Newsom proposed temporarily overriding the commission and creating districts more favorable to Democrats. In the end, voters approved California Proposition 50, a ballot measure that grants the state legislature the power to redraw California’s congressional map before the midterm, by 65% - 35% (Ballotpedia, 2026).
+In 2025, Texas’s new congressional map sought to add up to 5 Republican districts to help Trump and the Grand Old Party (GOP) in the midterm elections(Common Cause California, 2026). To counteract these changes, California Governor Gavin Newsom proposed temporarily overriding the commission and creating districts more favorable to Democrats. In the end, voters approved California Proposition 50, a ballot measure that grants the state legislature the power to redraw California’s congressional map before the midterm, by 65% - 35% (Ballotpedia, 2026).
 
 To better understand how redistricting could affect representation in California, our group analyzed voting and demographic data from the "2024 California L2 Voter File General Election Turnout Statistics Aggregated to 2020 Census Blocks", obtained from the Redistricting Data Hub. The data set contained information on voter registration and turnout by party affiliation, age, gender, and race. One of the most important aspects of the data that made it meaningful for our group was the 15-digit census block code named "GEOID20" because it allowed our team to join the voter data with census population data from the PL94171 package. This connection allowed us to incorporate population information when evaluating potential redistricting plans. This connection enabled us to incorporate population information when evaluating potential redistricting plans. 
 
@@ -96,5 +96,13 @@ According to Redistricting Datahub, they “[collect] data from trusted and offi
 
 # References 
 Kantas, N., Doucet, A., Singh, S. S., & Maciejowski, J. M. (2009). An Overview of Sequential Monte Carlo Methods for Parameter Estimation in General State-Space Models. IFAC Proceedings Volumes, 42(10), 774–785. https://doi.org/10.3182/20090706-3-fr-2004.00129 
+
+Redistricting Data Hub. (n.d.). Redistricting Data Hub. https://redistrictingdatahub.org/
+
+Redistricting in California ahead of the 2026 elections. (2026). Ballotpedia. https://ballotpedia.org/Redistricting_in_California_ahead_of_the_2026_elections
+
+The Latest on Mid-Decade Redistricting: California Update. (2026, April 27). Common Cause California. https://www.commoncause.org/california/resources/the-latest-on-mid-decade-redistricting-california-update/
+
+
 ...
 
