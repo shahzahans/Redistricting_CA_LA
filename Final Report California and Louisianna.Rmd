@@ -12,7 +12,7 @@ output: openintro::lab_report
 
 # Introduction
 Every 10 years, electoral district boundaries are redrawn to reflect the constantly shifting and growing population and to ensure fair and equal representation. However, the new proposed redistricting plans may face legal challenges, forcing states to redraw their district boundaries mid-decade. Such was the case for the two states this report will be focusing on: California and Louisiana. 
-
+![Progress](C:\Development\Data-and-Society-Redistricting_CA_LA)
 
 # California Redistricting
 In 2025, Texas’s new congressional map sought to add up to 5 Republican districts to help Trump and the Grand Old Party (GOP) in the midterm elections. To counteract these changes, California Governor Gavin Newsom proposed temporarily overriding the commission and creating districts more favorable to Democrats. In the end, voters approved California Proposition 50, a ballot measure that grants the state legislature the power to redraw California’s congressional map before the midterm, by 65% - 35%.
@@ -37,17 +37,17 @@ In a fun, simple way to grasp this information, think of playing a game of hide-
 
 ### Results
 
-# Adjacency Fix for California
+#### Adjacency Fix for California
 California had 3 precincts that were disconnected from the others, and it were islands that were not connected to the mainland, so those were selected by their numbered row to be into a new data frame named bad precincts. Then, a function was made to add adjacency, to create a connection with one row to the next row, and one was subtracted from the adjacency list of those precincts that were disconnected to make them zero-indexed because the other contiguous precincts were zero-indexed as well. Then, the distances from the precinct to other precincts were computed, then the shortest nonzero distance to another precinct was found and saved. After, a connection between input precinct and closest to another precinct was added. This function then was used for every precinct found in the bad precinct data frame. These adjacencies were fixed and added back to the adjacency list to redistrict California. 
 
-# California Extreme Gerrymander Map
+#### California Extreme Gerrymander Map
 In order to create a map that reached the political goals of California, which were to gain more democratic seats to counter off Texas’ new republican redistricts, we had to break apart the state into sections. The 3 sections of California were the norther area, district 1-22, Central California districts 23-37, and Socal districts 38-53. This selection of districts was made with filtering existing districts from census data of California from 2020 and therefore using the geometries of those selected district to remap new boundaries still with population deviation of 1% and compactness in mind. With the northern part of California, 10 districts were mapped, Central had 19 remapped districts, and Socal had 23 districts mapped, and the number of districts that we chose to create using the redist_map function were carefully chosen as they provided the most extreme gerrymandering results where there was 0-3 republican districts, and the best map to represent the political agenda made 4 republican districts. Within each section, there was lots of grouping and summarizing that needed to be done to get the voting information as well, to know the strength of the favorable party in each district. Which was taken by subtracting the total of the Democratic Party by the Republican and then dividing by the total, and then creating margin bins where if the percentage was in a certain range then it would coincide with the text of that margin and be used with the color scale to portray a clear story and legend. Once the individual maps were made, their rows were combined into a new data frame and then mapped with the same scale and labels that had been used to have a full new proposed map of California with extreme gerrymandering. 
 
 
 # Louisiana Redistricting
 Louisiana’s congressional redistricting in the 2020’s have so far been centered around racial gerrymandering. Louisiana’s 2020 congressional districts had 5 republican districts and 1 democratic district. However, to avoid being sued for diluting black voting power, Louisiana proposed a redistricting plan in 2022, because a third of Louisiana’s population is black. So, it had 4 republican districts and 2 democratic districts, with both democratic districts being majority minority. With the ruling of Louisiana v. Callais in 2026, Louisiana proposed a plan yet again due to racially gerrymandering, and this plan was passed into law. Louisiana’s new districts are similar to its 2020 districts. Both democratic districts from the 2020 and 2026 districts pack black voters, diluting black voting power. These districts pack black voters by drawing lines around black neighborhoods in New Orleans and Baton Rouge. The 2022 proposed plan had a second majority-minority district span that was thin, but it also spanned over half of the state. This district also packed black neighborhoods, but it had to do so from across the entire state.  
 
-# Supreme Court case.  
+#### Supreme Court case.  
 Louisiana v. Callais was ruled April 29th, 2026, and Louisiana’s 2022 proposed congressional districts were deemed to be unconstitutional due to racial gerrymander. This ruling also impacted the integrity of the Voting Rights Act, as the Supreme Court found using predominantly race to redistrict to be a form of gerrymandering.  
 
 This may have been the case in Louisiana, as the 2022 proposed map required packing that resulted in a thin  district that spanned over half the length of Louisiana. However, Louisiana’s one democratic district is not any better. The district, even in 2026, still packs black neighborhoods by splitting cities multiple cities apart. If redistricting plans cannot be decided by race, then Louisiana is still gerrymandering. 
