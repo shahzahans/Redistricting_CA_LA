@@ -1,0 +1,47 @@
+---
+title: "Final Report for California and Louisiana"
+author: "Asher Aley, Wendy Arenas, Ximena Juarez, Shadman Shahzahan"
+
+output: openintro::lab_report
+---
+
+# Abstract
+
+------------------------------------------------------------------
+
+
+# Introduction
+Every 10 years, electoral district boundaries are redrawn to reflect the constantly shifting and growing population and to ensure fair and equal representation. However, the new proposed redistricting plans may face legal challenges, forcing states to redraw their district boundaries mid-decade. Such was the case for the two states this report will be focusing on: California and Louisiana. 
+
+
+# California Redistricting
+In 2025, Texas’s new congressional map sought to add up to 5 Republican districts to help Trump and the Grand Old Party (GOP) in the midterm elections. To counteract these changes, California Governor Gavin Newsom proposed temporarily overriding the commission and creating districts more favorable to Democrats. In the end, voters approved California Proposition 50, a ballot measure that grants the state legislature the power to redraw California’s congressional map before the midterm, by 65% - 35%.
+
+To better understand how redistricting could affect representation in California, our group analyzed voting and demographic data from the "2024 California L2 Voter File General Election Turnout Statistics Aggregated to 2020 Census Blocks", obtained from the Redistricting Data Hub. The data set contained information on voter registration and turnout by party affiliation, age, gender, and race. One of the most important aspect of the data that made it meaningful for our group was the 15-digit census block code named "GEOID20" because it allowed our team to join the voter data with census population data from PL94171 package. This connection allowed us to incorporate population information when evaluating potential redistricting plans. This connection enabled us to incorporate population information when evaluating potential redistricting plans. 
+
+During the data preparation process, we focused primarily on voter registration ad turnout variables by age, gender, and party affiliation. While the dataset contained detailed racial categories, some were narrowly defined and represented relatively small populations. We also had access to broader demographic information through census data, we chose to emphasize those larger population groups in our analysis.
+
+
+We began with out analysis focused on one of California’s largest populations, the Hispanic population, making up 40%. Based on our findings, we’ve identified that areas in Northern rural California had denser Hispanic communities that voted for the Republican Party. Looking into why Trump received more support from the Hispanic community in the last election, it turned out that personal reasons influenced this change in party decision. One such example is how some families experienced positive changes during Trump’s previous term in office. 
+
+As a result, Trump won the last election because of major support from the Hispanic community. If California wants to secure more democratic districts, areas with Hispanic Republican voters would need to be split, or they could be split from other areas and put into a safe Republican district. 
+
+Another thing they would have to consider is the influence young voters could have on turnout.
+Young voters have the potential to influence election results, but their lower voter turnout may keep counties Republican that might otherwise shift Democratic if youth participation were higher. It could be because most people assume California will be a blue state no matter what, and that their vote won’t matter; however, that kind of thinking could lead to trouble.
+
+
+### Methods
+
+### Results
+
+# Louisiana Redistricting
+
+### Methods
+
+### Results
+
+# Discussion
+
+
+...
+
