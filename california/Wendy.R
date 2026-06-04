@@ -217,4 +217,51 @@ ggplot(merged_df, aes(x = voted_age_18_19, y = pct_hispanic)) +
 #         voted_esa_party_republican, reg_esa_party_republican, voted_eur_party_democratic, reg_eur_party_democratic, voted_eur_party_republican, reg_eur_party_republican)
 #View(subset_ca_hisp)
 
+library(tidyverse)
+library(tigris)
+library(sf)
+library(tmap)
+
+options(tigris_use_cache = TRUE)
+
+# California county map
+ca_counties <- counties(state = "CA", cb = TRUE, year = 2020) |>
+  st_transform(4326) |>
+  mutate(countyname = str_to_upper(NAME))
+
+# Your turnout dataset
+turnout_county <- CA_l2_2024_gen_stats_2020county |>
+  mutate(
+    countyname = str_to_upper(countyname)
+  )
+
+# Join datasets
+map_data <- ca_counties |>
+  left_join(turnout_county, by = "countyname")
+
+# Interactive map
+tmap_mode("view")
+
+hisp_map <- tm_shape(map_data) +
+  tm_polygons(
+    "pct_voted_hisp",
+    title = "Hispanic Turnout %",
+    palette = "Blues",
+    style = "quantile",
+    popup.vars = c(
+      "County" = "NAME",
+      "Hispanic Turnout %" = "pct_voted_hisp"
+      "Hispanic Rep %" = ""
+    )
+  ) +
+  tm_layout(
+    title = "Hispanic Voter Turnout by County"
+  )
+
+hisp_map
+
+sum(California_proposed_data$pct_minority_vap < 30)
+sum(California_proposed_data$pct_minority_vap > 60)
+
+pct_minority_vap_under30
 
