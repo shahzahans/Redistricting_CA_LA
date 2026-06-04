@@ -31,6 +31,10 @@ The census data for California from the PL94171 package, is the U.S Census Burea
 
 We began with our analysis focused on one of California’s largest populations, the Hispanic population, making up 40%. Based on our findings, we’ve identified that areas in Northern rural California had denser Hispanic communities that voted for the Republican Party. Looking into why Trump received more support from the Hispanic community in the last election, it turned out that personal reasons influenced this change in party decision. One such example is how some families experienced positive changes during Trump’s previous term in office. 
 
+![Hispanic Democratic Turnout %](Redist/hisp-demo-turnout.png) 
+
+![Hispanic Republican Turnout %](Redist/hisp-rep-turnout.png)
+
 As a result, Trump won the last election because of major support from the Hispanic community. If California wants to secure more democratic districts, areas with Hispanic Republican voters would need to be split, or they could be split from other areas and put into a safe Republican district. 
 
 Another thing they would have to consider is the influence young voters could have on turnout.
@@ -90,6 +94,8 @@ Louisiana cannot, with voting data, have more than one democratic district witho
 
 # DistrictLens - Interactive App
 
+[DistrictLens](https://districtlens.streamlit.app/)
+
 Our project includes an interactive redistricting map dashboard called DistrictLens, built with Streamlit and Python. The main purpose of DistrictLens is to help users explore congressional district plans for California and Louisiana in a more visual and interactive way. Instead of just showing screenshots or static maps, our dashboard lets users zoom in, pan across the state, switch between map layers, inspect individual districts, and compare political and demographic outcomes. This makes the project easier to understand because users can actually interact with the maps and see how district boundaries connect to real election, turnout, and demographic data.
 
 The interactive map loads district boundary files, election results, voter turnout data, and demographic information. The app uses geographic data to draw each congressional district on the map, then connects those district shapes to statistics such as Democratic vote share, Republican vote share, total votes, turnout rate, minority Citizen Voting Age Population, young voter turnout, compactness, and competitiveness. Users can choose whether to view California or Louisiana, and which map or layer to analyze. Once a layer is selected, the colors on the map update based on the metric being shown. For example, a district with a higher Democratic vote share may look different from one with a higher Republican vote share. This helps users quickly recognize patterns across the state.
@@ -116,6 +122,15 @@ California's Proposition 50 map was created to include 5 more democratic distric
 # Source of Data  
 According to Redistricting Datahub, they “[collect] data from trusted and official sources, checking the data for internal consistency and validating it against alternative datasets, soliciting feedback from stakeholders and users, and regularly auditing our processes to see what we can improve.” Therefore, we know the data we used from the redistricting hub is up to date, accurate, and of high quality, so it can be used in academic settings. 
 
+# Apendix
+
+![California proposition 50 map](Redist/California prop 50 map.jpg)
+
+![Louisiana 2024 Map](Redist/Louisiana 2024 Map.png)
+
+![Louisiana 2020 Map](Redist/lousiana 2020 map.png)
+
+![California Extreme Gerrymandering Map](Redist/proposed cal 4 rep.png)
 # References 
 Kantas, N., Doucet, A., Singh, S. S., & Maciejowski, J. M. (2009). An Overview of Sequential Monte Carlo Methods for Parameter Estimation in General State-Space Models. IFAC Proceedings Volumes, 42(10), 774–785. https://doi.org/10.3182/20090706-3-fr-2004.00129 
 
