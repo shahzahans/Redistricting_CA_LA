@@ -81,9 +81,14 @@ With Louisiana’s registered voters’ data, one can see there are more democra
 # Source of Data  
 According to Redistricting Datahub, they “[collect] data from trusted and official sources, checking the data for internal consistency and validating it against alternative datasets, soliciting feedback from stakeholders and users, and regularly auditing our processes to see what we can improve.” Therefore, we know the data we used from the redistricting hub is up to date, accurate, and of high quality, so it can be used in academic settings. 
 
-# References 
+# References
+Branson, M., & George, W. (n.d.). Geometry and Compactness. Web.stevenson.edu. https://web.stevenson.edu/mbranson/m4tp/version1/gerrymandering-math-topic-compactness.html 
 Kantas, N., Doucet, A., Singh, S. S., & Maciejowski, J. M. (2009). An Overview of Sequential Monte Carlo Methods for Parameter Estimation in General State-Space Models. IFAC Proceedings Volumes, 42(10), 774–785. https://doi.org/10.3182/20090706-3-fr-2004.00129 
 
-Redistricting Report Card Methodology. (2023). Gerrymander.princeton.edu. https://gerrymander.princeton.edu/redistricting-report-card-methodology
+Redistricting Report Card Methodology. (2023). Gerrymander.princeton.edu. https://gerrymander.princeton.edu/redistricting-report-card-methodology 
+
+2024 California L2 Voter File General Election Turnout Statistics Aggregated to 2020 Census blocks 
+
+
 ...
 
